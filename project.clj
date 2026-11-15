@@ -13,7 +13,7 @@
   :dependencies [[org.clojure/clojure "1.10.1"]
                  [org.clojure/clojurescript "1.10.520"]
                  [org.clojure/core.async "1.6.681"]
-                 [cljs-http "0.1.46"]
+                 [cljs-http "0.1.48"]
                  [clj-http "3.10.0"]
                  [cheshire "5.8.1"]]
   :plugins [[lein-cljsbuild "1.1.7" :exclusions [[org.clojure/clojure]]]
