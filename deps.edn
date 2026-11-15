@@ -1,0 +1,33 @@
+;; Runtime dependencies only. project.clj (still kept for lein users) must list the same
+;; ones plus clojure/clojurescript; scripts/gate-imcljs.sh compares the two.
+;; Clojure and ClojureScript themselves are NOT declared: the consuming application
+;; (BlueGenes, im-tables) pins them. Tests use the ClojureScript bundled with shadow-cljs.
+{:paths ["src/cljc" "src/cljs" "src/clj"]
+
+ ;; build.clj creates its basis from this file alone (:root nil, so the pom does not list
+ ;; org.clojure/clojure), which means the Clojure CLI's built-in repositories are absent.
+ :mvn/repos {"central" {:url "https://repo1.maven.org/maven2/"}
+             "clojars" {:url "https://repo.clojars.org/"}}
+
+ :deps {org.clojure/core.async {:mvn/version "0.4.500"}
+        cljs-http/cljs-http    {:mvn/version "0.1.46"}
+        clj-http/clj-http      {:mvn/version "3.10.0"}
+        cheshire/cheshire      {:mvn/version "5.8.1"}}
+
+ :aliases
+ {;; Classpath for shadow-cljs (see shadow-cljs.edn :deps). Clojure 1.11 or later is
+  ;; needed by shadow-cljs 2.28; the version here is only used for building/testing.
+  :cljs  {:extra-deps {org.clojure/clojure       {:mvn/version "1.12.0"}
+                       thheller/shadow-cljs      {:mvn/version "2.28.18"}}}
+  :test  {:extra-paths ["test/cljs"]}
+
+  ;; clojure -M:fmt check | fix   (config: .cljfmt.edn)
+  :fmt   {:deps      {dev.weavejester/cljfmt {:mvn/version "0.12.0"}}
+          :main-opts ["-m" "cljfmt.main"]}
+
+  ;; clojure -T:build clean | jar | install
+  :build  {:deps       {io.github.clojure/tools.build {:mvn/version "0.10.5"}}
+           :ns-default build}
+
+  ;; clojure -T:build:deploy deploy   (kept apart: deps-deploy drags in the AWS SDK)
+  :deploy {:extra-deps {slipset/deps-deploy {:mvn/version "0.2.2"}}}}}

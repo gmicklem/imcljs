@@ -16,6 +16,25 @@ imcljs returns channels so you'll also want to include core.async
 
 ```[org.clojure/core.async "0.2.395"]```
 
+## Development
+
+The build uses the Clojure CLI, shadow-cljs (tests) and tools.build (jar). `project.clj` is
+still present for Leiningen users; the runtime dependencies in `deps.edn` and `project.clj`
+must be kept identical, and the version lives in the `VERSION` file. Needs JDK 11 or later,
+Node 22 and the Clojure CLI.
+
+```sh
+npm ci                                              # shadow-cljs and the xhr2 polyfill
+npx shadow-cljs compile test && node out/test.js    # offline unit tests
+clojure -M:fmt check                                # formatting (use `fix` to reformat)
+clojure -T:build jar                                # target/imcljs-<version>.jar
+clojure -T:build install                            # also install into ~/.m2
+```
+
+The integration tests (`test-live` build, see `shadow-cljs.edn`) need a Biotestmine on
+`http://localhost:9999/biotestmine` and modify it. The read-only `imcljs.smoke-test` can
+be pointed at any mine, for example FlyMine, with a closure define described there.
+
 ## Usage
 
 With the exception of the fetch/registry function, all imcljs functions expect a map as their first parameter containing a mandatory `:root` key and two semi-optional keys, `:token` and `:model`.

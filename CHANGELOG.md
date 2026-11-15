@@ -1,3 +1,9 @@
+## Unreleased (1.7.0-SNAPSHOT)
+
+- Build moved to deps.edn, shadow-cljs (`:node-test` tests) and tools.build (jar, install). `project.clj` is kept for now.
+- The jar now contains only the library sources; it no longer ships the test namespaces or compiled JavaScript.
+- Removed the unused `aysylu/loom` dependency and the `core.unify` plugin entry.
+
 ## 1.6.0 (2022-04-07)
 
 - Make `query/deconstruct-by-class` and `query/group-views-by-class` match legacy im-tables behaviour

@@ -1,4 +1,7 @@
-(defproject org.intermine/imcljs "1.6.0"
+;; Legacy Leiningen build, kept alongside deps.edn/shadow-cljs.edn/build.clj (see the
+;; README). The version must equal the VERSION file (used by build.clj), and the runtime
+;; :dependencies must match deps.edn; scripts/gate-imcljs.sh checks both.
+(defproject org.intermine/imcljs "1.7.0-SNAPSHOT"
   :description "imcljs"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}

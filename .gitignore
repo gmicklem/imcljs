@@ -27,3 +27,5 @@ out
 /resources/public/js
 /resources/public/js/test
 node_modules/
+/.shadow-cljs
+/.cpcache

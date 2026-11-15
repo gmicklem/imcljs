@@ -1,0 +1,27 @@
+;; Tests for imcljs. There is no browser build: the library is compiled by its consumers.
+;;
+;;   npm ci
+;;   npx shadow-cljs compile test && node out/test.js
+;;       offline unit tests (what scripts/gate-imcljs.sh runs)
+;;
+;;   npx shadow-cljs compile test-live && node out/test-live.js
+;;       the integration suite (all of test/cljs). It expects a Biotestmine at
+;;       http://localhost:9999/biotestmine, registers/deletes users and creates lists,
+;;       so only run it against a throw-away mine. To use another mine for the read-only
+;;       smoke test (imcljs.smoke-test) only:
+;;         npx shadow-cljs compile test-live \
+;;           --config-merge '{:closure-defines {imcljs.env/root "https://www.flymine.org/flymine"}}'
+;;         node out/test-live.js --test=imcljs.smoke-test
+;;
+;; Node has no XMLHttpRequest, which cljs-http needs: imcljs.env installs the xhr2 npm
+;; package as a polyfill.
+{:deps {:aliases [:cljs :test]}
+
+ :builds
+ {:test      {:target    :node-test
+              :output-to "out/test.js"
+              :ns-regexp "^imcljs\\.(load|utils)-test$"}
+
+  :test-live {:target    :node-test
+              :output-to "out/test-live.js"
+              :ns-regexp "-test$"}}}

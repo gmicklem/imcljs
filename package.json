@@ -1,0 +1,13 @@
+{
+  "name": "imcljs",
+  "private": true,
+  "description": "Build and test tooling for imcljs (the library itself is published to Clojars).",
+  "license": "EPL-1.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "shadow-cljs": "2.28.18",
+    "xhr2": "0.2.1"
+  }
+}

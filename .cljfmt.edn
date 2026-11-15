@@ -1,0 +1,6 @@
+;; Read by `clojure -M:fmt` (cljfmt 0.12). project.clj has the equivalent :cljfmt map for
+;; lein-cljfmt 0.6.1. The consecutive-blank-lines rule is off so that both versions
+;; accept the existing sources unchanged.
+{:extra-indents {async [[:inner 0]]}
+ :remove-consecutive-blank-lines? false
+ :paths ["src" "test" "dev" "build.clj"]}
