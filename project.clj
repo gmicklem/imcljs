@@ -14,7 +14,7 @@
                  [org.clojure/clojurescript "1.10.520"]
                  [org.clojure/core.async "1.6.681"]
                  [cljs-http "0.1.48"]
-                 [clj-http "3.10.0"]
+                 [clj-http "3.13.0"]
                  [cheshire "5.13.0"]]
   :plugins [[lein-cljsbuild "1.1.7" :exclusions [[org.clojure/clojure]]]
             [lein-cljfmt "0.6.1"]
