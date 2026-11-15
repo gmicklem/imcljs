@@ -14,7 +14,6 @@
                  [clj-http "3.10.0"]
                  [cheshire "5.8.1"]]
   :plugins [[lein-cljsbuild "1.1.7" :exclusions [[org.clojure/clojure]]]
-            [org.clojure/core.unify "0.5.7"]
             [lein-cljfmt "0.6.1"]
             [lein-codox "0.10.7"]]
   :aliases {"format" ["cljfmt" "fix"]}
