@@ -33,17 +33,17 @@ clojure -T:build install                            # also install into ~/.m2
 
 The integration tests (`test-live` build, see `shadow-cljs.edn`) need a Biotestmine on
 `http://localhost:9999/biotestmine` and modify it. The read-only `imcljs.smoke-test` can
-be pointed at any mine, for example FlyMine, with a closure define described there.
+be pointed at any mine, for example HumanMine, with a closure define described there.
 
 ## Usage
 
 With the exception of the fetch/registry function, all imcljs functions expect a map as their first parameter containing a mandatory `:root` key and two semi-optional keys, `:token` and `:model`.
 
 ```clj
-(def flymine {:root  "https://www.flymine.org/flymine"
-              :token nil ; Optional parameter for authentication
-              :model "genomic" ; Required by some functions, such as executing a query
-              })
+(def humanmine {:root  "https://www.humanmine.org/humanmine"
+                :token nil ; Optional parameter for authentication
+                :model "genomic" ; Required by some functions, such as executing a query
+                })
 ```
 
 We recommend fetching the `model` once and storing it in the above map for re-use across your application.
@@ -72,16 +72,16 @@ We recommend fetching the `model` once and storing it in the above map for re-us
 
 ```cljs
 ; Fetch model (you'll need this for later.)
-(go (log (<! (fetch/model flymine)))
+(go (log (<! (fetch/model humanmine)))
 
 ; Fetch templates
-(go (log (<! (fetch/templates flymine)))
+(go (log (<! (fetch/templates humanmine)))
 
 ; Fetch lists
-(go (log (<! (fetch/lists flymine)))
+(go (log (<! (fetch/lists humanmine)))
 
 ; Fetch summary fields
-(go (log (<! (fetch/summary-fields flymine)))
+(go (log (<! (fetch/summary-fields humanmine)))
 ```
 
 ### Fetching query results
@@ -103,13 +103,13 @@ Most result-fetching functions require that the `:model` key be present in their
                         :value "a*"}]})
 
 ; Rows
-(go (log (<! (fetch/rows flymine my-query))))
+(go (log (<! (fetch/rows humanmine my-query))))
 
 ; Records
-(go (log (<! (fetch/records flymine my-query {:size 10}))))
+(go (log (<! (fetch/records humanmine my-query {:size 10}))))
 
 ; Row Count
-(go (log (<! (fetch/row-count flymine my-query))))
+(go (log (<! (fetch/row-count humanmine my-query))))
 
 ```
 

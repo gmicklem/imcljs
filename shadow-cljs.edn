@@ -10,7 +10,7 @@
 ;;       so only run it against a throw-away mine. To use another mine for the read-only
 ;;       smoke test (imcljs.smoke-test) only:
 ;;         npx shadow-cljs compile test-live \
-;;           --config-merge '{:closure-defines {imcljs.env/root "https://www.flymine.org/flymine"}}'
+;;           --config-merge '{:closure-defines {imcljs.env/root "https://www.humanmine.org/humanmine"}}'
 ;;         node out/test-live.js --test=imcljs.smoke-test
 ;;
 ;; Node has no XMLHttpRequest, which cljs-http needs: imcljs.env installs the xhr2 npm
