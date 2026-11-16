@@ -28,3 +28,27 @@
       (is (string? xml))
       (is (re-find #"<query " xml))
       (is (re-find #"Gene\.symbol" xml)))))
+
+(deftest query->xml-omits-blank-attributes
+  (let [q {:from "Gene" :select ["Gene.symbol"]
+           :where [{:path "Gene.symbol" :op "=" :value "ABRA" :code "A"}]}
+        head (fn [q] (re-find #"^<query [^>]*>" (query/->xml nil q)))]
+    (testing "a blank constraintLogic is left out (the mine answers 400 to constraintLogic=\"\")"
+      (doseq [blank [nil "" "  "]]
+        (is (not (re-find #"constraintLogic" (head (assoc q :constraintLogic blank)))))))
+    (testing "an empty sortOrder, title and longDescription are left out"
+      (doseq [blank [nil [] "" ()]]
+        (is (not (re-find #"sortOrder" (head (assoc q :sortOrder blank))))))
+      (is (not (re-find #"name=|longDescription" (head (assoc q :title "" :longDescription "  "))))))
+    (testing "non-blank attributes are kept"
+      (let [h (head (assoc q
+                           :constraintLogic "A"
+                           :sortOrder [{:path "Gene.symbol" :direction "ASC"}]
+                           :title "T"
+                           :longDescription "D"))]
+        (is (re-find #"constraintLogic=\"A\"" h))
+        (is (re-find #"sortOrder=\"Gene.symbol ASC\"" h))
+        (is (re-find #"name=\"T\"" h))
+        (is (re-find #"longDescription=\"D\"" h))))
+    (testing "the view attribute is always present"
+      (is (re-find #"view=\"Gene.symbol\"" (head q))))))

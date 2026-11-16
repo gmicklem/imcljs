@@ -2,6 +2,7 @@
 
 - Build moved to deps.edn, shadow-cljs (`:node-test` tests) and tools.build (jar, install). `project.clj` is kept for now.
 - The jar now contains only the library sources; it no longer ships the test namespaces or compiled JavaScript.
+- `imcljs.query/->xml` no longer emits blank optional attributes (`constraintLogic=""`, `sortOrder=""`, empty `name` or `longDescription`); the mine answered 400 "XML is not well formatted" to a list save with an empty `constraintLogic`.
 - Removed the unused `aysylu/loom` dependency and the `core.unify` plugin entry.
 
 ## 1.6.0 (2022-04-07)

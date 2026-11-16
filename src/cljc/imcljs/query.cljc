@@ -178,18 +178,32 @@
 
 (defn make-join [join-path] (str "\n  <join path=\"" join-path "\" style=\"OUTER\"/>"))
 
+(defn- present
+  "Returns x unless it is nil, a blank string or an empty collection. An empty
+  string is truthy in Clojure, so `(when-let [x (:constraintLogic q)] ...)` would
+  still let it through; the InterMine web service answers 400 'XML is not well
+  formatted' for constraintLogic=\"\" and sortOrder=\"\"."
+  [x]
+  (cond
+    (nil? x) nil
+    (string? x) (when-not (blank? x) x)
+    (coll? x) (when (seq x) x)
+    :else x))
+
 (defn ->xml
-  "Returns the stringfied XML representation of an EDN intermine query."
+  "Returns the stringfied XML representation of an EDN intermine query.
+  Optional attributes (constraintLogic, sortOrder, name, longDescription) are
+  left out of the XML when they are nil, blank or empty."
   [model query]
   ;(if (nil query) (throw (js/Error. "Oops!")))
 
   (let [query           (sterilize-query query)
         head-attributes (cond-> {:model (:name model)
                                  :view (clojure.string/join " " (:select query))}
-                          (:constraintLogic query) (assoc :constraintLogic (:constraintLogic query))
-                          (:sortOrder query) (assoc :sortOrder (clojure.string/join " " (flatten (map (juxt :path :direction) (:sortOrder query)))))
-                          (:title query) (assoc :name (:title query))
-                          (:longDescription query) (assoc :longDescription (:longDescription query)))]
+                          (present (:constraintLogic query)) (assoc :constraintLogic (:constraintLogic query))
+                          (present (:sortOrder query)) (assoc :sortOrder (clojure.string/join " " (flatten (map (juxt :path :direction) (:sortOrder query)))))
+                          (present (:title query)) (assoc :name (:title query))
+                          (present (:longDescription query)) (assoc :longDescription (:longDescription query)))]
     (str "<query " (stringify-map head-attributes) ">"
          (when (:joins query) (apply str (map make-join (:joins query))))
 
