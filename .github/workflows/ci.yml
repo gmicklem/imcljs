@@ -1,0 +1,140 @@
+# Continuous integration for imcljs. It gates Renovate's dependency pull requests and
+# runs the same steps as the local gate script (scripts/gate-imcljs.sh in the
+# intermine-planning repo): cljfmt, the offline cljs and JVM unit tests, and the
+# library jar. The integration tests (test-live build in shadow-cljs.edn) need a
+# Biotestmine on localhost:9999 and modify it, so they are not run here.
+name: CI
+
+on:
+  push:
+    branches: [maint-2026, 'maint/**']
+    paths-ignore: ['**/*.md', 'docs/**']
+  pull_request:
+    paths-ignore: ['**/*.md', 'docs/**']
+  workflow_dispatch:
+
+# A newer push to the same branch or pull request supersedes a running build.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash   # bash -eo pipefail, so `cmd | tee log` fails when cmd fails
+
+env:
+  # Where the steps tee their output; uploaded as an artifact when the job fails.
+  CI_LOG_DIR: ci-logs
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      # The Clojure CLI comes from the official installer on the Clojure core team's
+      # release page (same as BlueGenes' CI), checked against a pinned sha256. To
+      # upgrade: pick a release of https://github.com/clojure/brew-install, copy the
+      # sha256 of its linux-install.sh (the asset's digest) here.
+      - name: Install the Clojure CLI
+        env:
+          CLOJURE_VERSION: "1.12.6.1673"
+          INSTALLER_SHA256: "5ae63b082ed33bf4c29bf1a8317c5c15249d1bc753676b2f5177fb3804ad6f77"
+        run: |
+          dir=$(mktemp -d)
+          curl -fsSL --retry 5 --retry-connrefused -o "$dir/linux-install.sh" \
+            "https://github.com/clojure/brew-install/releases/download/${CLOJURE_VERSION}/linux-install.sh"
+          echo "${INSTALLER_SHA256}  $dir/linux-install.sh" | sha256sum -c -
+          (cd "$dir" && bash linux-install.sh --prefix "$HOME/.local/clojure")
+          echo "$HOME/.local/clojure/bin" >> "$GITHUB_PATH"
+          rm -rf "$dir"
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Cache Maven and gitlibs
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.m2/repository
+            ~/.gitlibs
+          key: clj-deps-${{ runner.os }}-${{ hashFiles('deps.edn') }}
+          restore-keys: |
+            clj-deps-${{ runner.os }}-
+
+      - name: Tool versions and log directory
+        run: |
+          java -version
+          clojure --version
+          echo "node $(node -v), npm $(npm -v)"
+          mkdir -p "$CI_LOG_DIR"
+
+      - name: Check formatting (cljfmt)
+        run: clojure -M:fmt check 2>&1 | tee "$CI_LOG_DIR/fmt.log"
+
+      - name: Install npm packages
+        run: npm ci 2>&1 | tee "$CI_LOG_DIR/npm-ci.log"
+
+      # The :test build runs only the offline namespaces (imcljs.load-test, utils-test).
+      # A cljs.test summary and no failures or errors are required, so a build that
+      # compiles to an empty test run cannot pass.
+      - name: Unit tests, ClojureScript (shadow-cljs :test, node)
+        run: |
+          npx shadow-cljs compile test 2>&1 | tee "$CI_LOG_DIR/test-cljs-compile.log"
+          node out/test.js 2>&1 | tee "$CI_LOG_DIR/test-cljs.log"
+          sed 's/\x1b\[[0-9;]*m//g' "$CI_LOG_DIR/test-cljs.log" > "$CI_LOG_DIR/test-cljs.plain.log"
+          grep -E '^Ran [0-9]+ tests containing [0-9]+ assertions' "$CI_LOG_DIR/test-cljs.plain.log"
+          grep -E '^0 failures, 0 errors' "$CI_LOG_DIR/test-cljs.plain.log"
+
+      # The JVM namespaces load, then the offline JVM test (clj-http and cheshire
+      # against a throw-away local HTTP server) runs; neither needs a mine.
+      - name: Load the JVM namespaces
+        run: |
+          clojure -M -e "(doseq [n '[imcljs.fetch imcljs.save imcljs.auth imcljs.path imcljs.query imcljs.entity imcljs.send imcljs.internal.io imcljs.internal.utils imcljs.internal.defaults]] (require n)) (println \"loaded JVM namespaces\")" 2>&1 | tee "$CI_LOG_DIR/clj-load.log"
+
+      - name: Unit tests, JVM (clojure -M:test-clj)
+        run: |
+          clojure -M:test-clj 2>&1 | tee "$CI_LOG_DIR/test-clj.log"
+          grep -E '^Ran [0-9]+ tests containing [0-9]+ assertions' "$CI_LOG_DIR/test-clj.log"
+          grep -E '^0 failures, 0 errors' "$CI_LOG_DIR/test-clj.log"
+
+      - name: Library jar (clojure -T:build jar)
+        run: |
+          clojure -T:build jar 2>&1 | tee "$CI_LOG_DIR/jar.log"
+          version=$(tr -d '[:space:]' < VERSION)
+          jar="target/imcljs-$version.jar"
+          test -f "$jar"
+          unzip -Z1 "$jar" > "$CI_LOG_DIR/jar-contents.txt"
+          pom=$(unzip -p "$jar" META-INF/maven/org.intermine/imcljs/pom.xml)
+          problems=""
+          for f in imcljs/fetch.cljc imcljs/internal/io.clj imcljs/internal/io.cljs; do
+            grep -qx "$f" "$CI_LOG_DIR/jar-contents.txt" || problems="$problems missing:$f"
+          done
+          grep -qE '_test\.clj|runner\.cljs|^public/|\.class$' "$CI_LOG_DIR/jar-contents.txt" && problems="$problems tests-assets-or-classes-in-jar"
+          echo "$pom" | grep -q '<groupId>org.intermine</groupId>' || problems="$problems pom-groupId"
+          echo "$pom" | grep -q '<artifactId>imcljs</artifactId>' || problems="$problems pom-artifactId"
+          echo "$pom" | grep -q "<version>$version</version>" || problems="$problems pom-version"
+          echo "$pom" | grep -qE '<artifactId>(clojure|clojurescript)</artifactId>' && problems="$problems pom-lists-clojure"
+          if [ -n "$problems" ]; then echo "jar problems:$problems"; exit 1; fi
+          echo "$jar ok: $(grep -c '\.clj' "$CI_LOG_DIR/jar-contents.txt") source files"
+
+      - name: Upload logs (failure)
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ci-logs
+          path: ${{ env.CI_LOG_DIR }}/
+          retention-days: 7
+          if-no-files-found: ignore
